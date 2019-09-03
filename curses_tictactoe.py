@@ -6,60 +6,62 @@ from pyfiglet import Figlet
 f = Figlet(font='slant')
 
 
-def title_screen(stdscr: object) -> None:
+def title_screen(stdscr: curses.initscr) -> None:
 
-    # clear terminal
-    stdscr.nodelay(True)
-    stdscr.clear()
-    stdscr.refresh()
+    # Set properties
     curses.curs_set(0)
-    height, width = stdscr.getmaxyx()
+    stdscr.nodelay(True)
 
-    title = f.renderText('TIC TAC TOE')
-    sub_title = 'produced by: robert delanghe studio'
-    any_key = 'press any key to continue'
+    # Get key input
+    k = stdscr.getch()
 
-    def key_break(func):
-        k = 0
-        while k == 0 or k == curses.KEY_RESIZE:
-            output = func()
-            k = stdscr.getch()
-        return output
+    # Get window params
+    win_h, win_w = stdscr.getmaxyx()
 
-    def wipe_text(text):
+    def wipe_text(text: str) -> int:
         lines = text.split("\n")
-        x = int((width - len(lines[0])) / 2)
-        for i in range(len(lines[0])):
-            y = int((height - len(lines)) / 2)
+
+        # Get dimensions for text
+        x_len = len(lines[0])
+        y_len = len(lines)
+
+        # Find center for text
+        x = int((win_w - x_len) / 2)
+        y = y_start = int((win_h - y_len) / 2)
+
+        for i in range(x_len):
+            y = y_start
             for line in lines[:-1]:
                 stdscr.addstr(y, x, line[i])
                 y += 1
             stdscr.refresh()
-            time.sleep(.1)
-
+            time.sleep(.05)
             x += 1
         return y
 
-    def load_title():
+    def load_title() -> None:
+        title = f.renderText('TIC TAC TOE')
+        sub_title = 'produced by: robert delanghe studio'
+        any_key = 'press any key to continue'
+
         y = wipe_text(title)
 
-        stdscr.addstr(y, int((width - len(sub_title)) / 2), sub_title)
+        stdscr.addstr(y, int((win_w - len(sub_title)) / 2), sub_title)
         stdscr.refresh()
 
-        time.sleep(2)
+        time.sleep(1)
 
-        stdscr.attron(curses.A_BLINK)
-        stdscr.attron(curses.A_DIM)
-        stdscr.addstr(height - 1, width - len(any_key) - 2, any_key)
-        stdscr.attroff(curses.A_BLINK)
-        stdscr.attroff(curses.A_DIM)
+        stdscr.addstr(win_h - 1, win_w - len(any_key) - 2, any_key, curses.A_BLINK + curses.A_DIM)
 
         stdscr.refresh()
 
-    key_break(load_title)
+    load_title()
+
+    while k == -1:
+        k = stdscr.getch()
 
 
-def game(stdscr):
+def game(stdscr: curses.initscr) -> None:
     # clear terminal
     stdscr.clear()
     stdscr.refresh()
@@ -78,22 +80,22 @@ def game(stdscr):
         return int((short * scale) / num)
 
     # function for testing
-    def get_board():
+    def get_board() -> str:
         fill = u"\u2588"
         # fill = '#'
         num = 3
         size = square_size()
         output = ''
 
-        for y in range(1, (size * num) + num):
+        for row in range(1, (size * num) + num):
             line = ''
-            for x in range(1, (size * num) + num):
-                y_pos = int(y / (size + 1))
-                x_pos = int(x / (size + 1))
+            for col in range(1, (size * num) + num):
+                y_pos = int(row / (size + 1))
+                x_pos = int(col / (size + 1))
                 grid_pos = str(x_pos + (y_pos * num))[-1]
-                if y % (size + 1) == 0:
+                if row % (size + 1) == 0:
                     line += fill * 2
-                elif x % (size + 1) == 0:
+                elif col % (size + 1) == 0:
                     line += fill * 2
                 else:
                     line += grid_pos * 2
@@ -105,25 +107,26 @@ def game(stdscr):
 
     def get_cross():
         cross = ''
-        height = square_size()
-        width = height * 2
-        for li in range(height):
-            for c in range(width):
-                if c == li * 2 or c == (width - 1) - (li * 2):
+        sqr_h = square_size()
+        sqr_w = sqr_h * 2
+        for row in range(sqr_h):
+            for col in range(sqr_w):
+                if col == row * 2 or col == (sqr_w - 1) - (row * 2):
                     cross += ' '
                 else:
                     cross += '&'
-            if li != height - 1:
+            if row != sqr_h - 1:
                 cross += '\n'
         return cross
 
     # function to create a circle
     # Thanks to Anant Agarwal
-    def get_circle(height):
+    def get_circle():
         circle = ''
-        radius = (height / 2)
-        for i in range(height + 1):
-            for j in range(height + 1):
+        sqr_h = square_size()
+        radius = (sqr_h / 2)
+        for i in range(sqr_h + 1):
+            for j in range(sqr_h + 1):
                 dist = math.sqrt((i - radius) * (i - radius) +
                                  (j - radius) * (j - radius)) + 1
                 if radius - 0.5 < dist < radius + 0.5:
@@ -136,23 +139,23 @@ def game(stdscr):
 
         stdscr.clear()
         lines = board.split("\n")
-        y = int((height - len(lines)) / 2)
-        sqrs = {}
+        board_y = int((height - len(lines)) / 2)
+        square_dict = {}
         for line in lines:
-            x = int((width - len(lines[0])) / 2)
-            for c in line:
-                if c not in sqrs and c.isdigit():
-                    sqrs[c] = []
-                if c.isdigit():
-                    sqrs[c].append((y, x))
-                    stdscr.addstr(y, x, c)
+            board_x = int((width - len(lines[0])) / 2)
+            for col in line:
+                if col not in square_dict and col.isdigit():
+                    square_dict[col] = []
+                if col.isdigit():
+                    square_dict[col].append((board_y, board_x))
+                    stdscr.addstr(board_y, board_x, col)
                 else:
-                    stdscr.addstr(y, x, c)
-                x += 1
-            y += 1
+                    stdscr.addstr(board_y, board_x, col)
+                board_x += 1
+            board_y += 1
             stdscr.refresh()
         stdscr.refresh()
-        return sqrs
+        return square_dict
 
     squares = draw_board()
     last = ''
@@ -187,13 +190,14 @@ def game(stdscr):
             turn += 1
 
         stdscr.refresh()
-        if event == ord("q"): break
+        if event == ord("q"):
+            break
 
 
 def main():
     curses.wrapper(title_screen)
-    curses.wrapper(game)
+    # curses.wrapper(game)
 
 
-if __name__== "__main__":
+if __name__ == "__main__":
     main()
