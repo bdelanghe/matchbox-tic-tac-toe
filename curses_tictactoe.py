@@ -1,6 +1,7 @@
 import curses
 import time
 import math
+# import numpy as np
 from pyfiglet import Figlet
 from collections import namedtuple
 from typing import NamedTuple
@@ -12,10 +13,34 @@ settings = {
     'board_lines': u'\u2588'
 }
 
-scores = {
-    'player1': 0,
-    'player2': 0
+player_scores = {
+    1: 0,
+    2: 0
 }
+# class Player:
+#     pass
+#
+# class Board:
+#     pass
+#
+# class Move:
+#
+# class Game:
+#     def is_win_move(a, y, x, dim=3):
+#         if np.sum(a[y]) == dim:
+#             return True
+#         if np.sum(a, axis=0)[x] == dim:
+#             return True
+#         if x == y:
+#             if sum(np.diagonal(a)) == dim:
+#                 return True
+#         if x + y == dim - 2:
+#             if sum(np.diag(np.fliplr(a))) == dim:
+#                 return True
+#         return False
+#
+#     def new_player_matrix(dim=3):
+#         return np.zeros((dim, dim), dtype=int)
 
 games = 0
 
