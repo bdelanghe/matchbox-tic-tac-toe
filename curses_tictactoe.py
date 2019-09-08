@@ -120,7 +120,7 @@ class Player:
         self.score = 0
         self.is_ai = is_ai
         self.moves: Moves = Moves()
-        self.keymap: Dict[str, Square] = KeymapLib(self).keys
+        self.keymap: Dict[str, Square] = KeymapLib.from_player(self).keys
 
     def get_square(self, char: str) -> Square:
         """given player input look for corresponding square"""
@@ -139,16 +139,31 @@ class Session:
         self.players: Dict[int, Player] = {0: Player(0, ai[0]), 1: Player(1, ai[1])}
         self.play_count: int = 0
         self.quit: bool = False
-        self.current_game: Optional[Game] = Game(self)
+        self.current_game: Optional[Game] = None
 
     @property
     def first_move(self) -> int:
         """which player gets to go first"""
         return self.play_count % 2
 
-    def new_game(self) -> None:
+    def _new_game(self) -> None:
         """create a new game"""
         self.current_game = Game(self)
+
+    def _print_scores(self) -> None:
+        """display the current player scores to console"""
+        scores = ''
+        for player in self.players.values():
+            scores += f'Player {player.number + 1}: {player.score}      '
+        print(scores + '\n')
+
+    def play(self):
+        """keep playing games until quit"""
+        while self.quit is False:
+            self._new_game()
+            self._print_scores()
+            self.current_game.play()
+        print('Thanks for playing!!')
 
 
 class Game:
@@ -203,13 +218,18 @@ class Game:
                 line += '|' + e
             print(line + '|')
 
+    def _end_cleanup(self) -> None:
+        """clean house on game end"""
+        for player in self.players.values():
+            player.moves.reset_moves()
+
     def _new_winner(self) -> Player:
         """increment play score"""
         winner = self._current_player
         winner.score += 1
         player = winner.number
         self.end = True
-        print(f'Winner is player {player + 1}')
+        print(f'Player {player + 1} Wins!!!!')
         return winner
 
     def _get_square(self, char: str) -> Optional[Square]:
@@ -222,8 +242,7 @@ class Game:
             return None
 
     def _is_open(self, sqr: Square) -> bool:
-        y, x = sqr
-        free = self.open_squares[x][y]
+        free = self.open_squares[sqr.y][sqr.x]
         if free == 0:
             print('Square is not open')
         return free
@@ -259,6 +278,7 @@ class Game:
             self.print_board()
             self.console_input()
             self.play_move(self.selected)
+        self._end_cleanup()
 
 
 class Board:
@@ -281,22 +301,23 @@ class Board:
 class KeymapLib:
     """mapping characters to squares"""
 
-    def __init__(self, player: Player) -> None:
-        self.player = player
+    def __init__(self, keys=None) -> None:
+        self.keys = keys
 
-    @property
-    def keys(self) -> Dict[str, Square]:
+    @classmethod
+    def from_player(cls, player: Player):
         """each player has their own keys"""
         keys_dict = {}
         chars = None
-        if self.player.number == 0:
+        if player.number == 0:
             chars = ['q', 'w', 'e', 'a', 's', 'd', 'z', 'x', 'c']
-        if self.player.number == 1:
-            chars = ['u', 'i', 'o', 'h', 'j', 'k', 'n', 'm', ',']
-        if chars is not None:
-            for i, c in enumerate(chars):
-                keys_dict[c] = Square(i % 3, int(i / 3))
-            return keys_dict
+        if player.number == 1:
+            chars = ['u', 'i', 'o', 'j', 'k', 'l', 'm', ',', '.']
+        for i, c in enumerate(chars):
+            y = int(i / 3)
+            x = i % 3
+            keys_dict[c] = Square(y=y, x=x)
+        return cls(keys_dict)
 
     # @property
     # def arrow_keys(self) -> Dict[str, tuple]:
@@ -319,29 +340,26 @@ class Moves:
         """reset after end of game"""
         self.matrix: np.ndarray = np.zeros((self.n_by, self.n_by), dtype=int)
 
-    def move(self, square: Square) -> bool:
+    def move(self, sqr: Square) -> bool:
         """add a move to np matrix return win"""
-        y, x = square
-        self.matrix[x][y] = 1
-        return self._is_win_move(square)
+        self.matrix[sqr.y][sqr.x] = 1
+        return self._is_win_move(sqr)
 
-    def _is_win_move(self, square: Square) -> bool:
+    def _is_win_move(self, sqr: Square) -> bool:
         """check if the last move was the winning move"""
         # todo return which squares contributed to the win
         # todo maybe make a win tuple?
-        a = self.matrix
-        y, x = square
-        # print('checking for win')
+        # fixme column checking is not working
 
-        if np.sum(a[y]) == self.n_by:
+        if np.sum(self.matrix[sqr.y]) == self.n_by:
             return True
-        if np.sum(a, axis=0)[x] == self.n_by:
+        elif sum([l[sqr.x] for l in self.matrix]) == self.n_by:
             return True
-        if x == y:
-            if sum(np.diagonal(a)) == self.n_by:
+        elif sqr.x == sqr.y:
+            if sum(np.diagonal(self.matrix)) == self.n_by:
                 return True
-        if x + y == self.n_by - 2:
-            if sum(np.diag(np.fliplr(a))) == self.n_by:
+        elif sqr.x + sqr.y == self.n_by - 2:
+            if sum(np.diag(np.fliplr(self.matrix))) == self.n_by:
                 return True
         return False
 
@@ -359,7 +377,7 @@ class CursesSession(Session):
         curses.curs_set(0)
 
         while self.quit is False:
-            self.new_game()
+            self._new_game()
             self.current_game.play()
 
 
@@ -436,7 +454,7 @@ class CursesBoard:
         """find the pixel box size for each square"""
         sqr_y = int((self._window.short_side * self.scale) / self.n_by)
         sqr_x = sqr_y * 2
-        return Size(sqr_y, sqr_x)
+        return Size(y=sqr_y, x=sqr_x)
 
     @property
     def board_grid(self) -> List[str]:
@@ -449,8 +467,10 @@ class CursesBoard:
         for row in range(1, (size.y * self.n_by) + self.n_by):
             line = ''
             for col in range(1, (size.y * self.n_by) + self.n_by):
-                sqr_cord = Square(int(row / self.n_by), int(col / self.n_by))
-                curse_cord = CursesCords(row, col)
+                y = int(row / self.n_by)
+                x = int(col / self.n_by)
+                sqr_cord = Square(y=y, x=x)
+                curse_cord = CursesCords(y=row, x=col)
                 if row % (size.y + 1) == 0:
                     line += self.line_fill * 2
                 elif col % (size.y + 1) == 0:
@@ -562,12 +582,10 @@ def title_screen(stdscr: curses.initscr) -> None:
         k = stdscr.getch()
 
 
-session = Session()
-pie = 1
-
-
 def play() -> None:
     """lets play tic tac toe"""
+    sess = Session()
+    sess.play()
 
 
 def main() -> None:
