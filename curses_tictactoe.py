@@ -1,5 +1,6 @@
 """TIC TAC TOE GAME"""
 
+import cmd
 import curses
 import math
 import time
@@ -17,6 +18,36 @@ CursesCords = namedtuple('Cords', ['y', 'x'])
 
 
 # todo make keymap namedtuple?
+
+class CmdMode(cmd.Cmd):
+    """cmd wrapper for interactions"""
+    intro = f.renderText('TIC TAC TOE')
+    prompt = '(play)'
+    file = None
+
+    def __init__(self):
+        super().__init__()
+        self.session = Session
+        self.player = 0
+
+    def precmd(self, line):
+        """Hook method executed just before the command line is
+        interpreted, but after the input prompt is generated and issued.
+
+        """
+        return 'pie'
+
+    def do_bye(self, arg):
+        """all good things come to an end"""
+        print('thanks for playing')
+        self.close()
+        return True
+
+    def close(self):
+        """all good things come to an end"""
+        if self.file:
+            self.file.close()
+            self.file = None
 
 
 class Window:
@@ -100,27 +131,15 @@ class Window:
         """flash the terminal screen"""
         curses.flash()
 
-    # def add_sub_win(self, lines, cols, begin_y, begin_x):
-    #     win = Window(curses.newwin(lines, cols, begin_y, begin_x))
-    #     self.sub_wins += win
-
-    # def draw(self):
-    #     self.stdscr.clear()
-    #     self.stdscr.refresh()
-    #     for e in self.buffer:
-    #         print(e)
-    #     self.stdscr.refresh()
-
 
 class Player:
     """player object to hold score"""
 
-    def __init__(self, number: int, is_ai: bool) -> None:
-        self.number = number
-        self.score = 0
-        self.is_ai = is_ai
+    def __init__(self, number: int) -> None:
         self.moves: Moves = Moves()
+        self.number = number
         self.keymap: Dict[str, Square] = KeymapLib.from_player(self).keys
+        self.score = 0
 
     def get_square(self, char: str) -> Square:
         """given player input look for corresponding square"""
@@ -135,11 +154,11 @@ class Player:
 class Session:
     """sessions help keep track score"""
 
-    def __init__(self, ai: tuple = (0, 0)) -> None:
-        self.players: Dict[int, Player] = {0: Player(0, ai[0]), 1: Player(1, ai[1])}
+    def __init__(self) -> None:
+        self.players: Dict[int, Player] = {0: Player(0), 1: Player(1)}
+        self.current_game: Optional[Game] = None
         self.play_count: int = 0
         self.quit: bool = False
-        self.current_game: Optional[Game] = None
 
     @property
     def first_move(self) -> int:
@@ -157,13 +176,18 @@ class Session:
             scores += f'Player {player.number + 1}: {player.score}      '
         print(scores + '\n')
 
+    @staticmethod
+    def _print_exit_message() -> None:
+        """saying goodbye is always hard"""
+        print('Thanks for playing!!')
+
     def play(self):
         """keep playing games until quit"""
         while self.quit is False:
-            self._new_game()
             self._print_scores()
+            self._new_game()
             self.current_game.play()
-        print('Thanks for playing!!')
+        self._print_exit_message()
 
 
 class Game:
@@ -173,13 +197,12 @@ class Game:
 
     def __init__(self, session) -> None:
         self.session: Optional[Session] = session
+        self.players: Dict[int, Player] = self.session.players
         self.end: bool = False
         self.turns: int = 0
-        self.winner: Optional[Player] = None
         self.previous_move: Optional[Square] = None
-        self.players: Dict[int, Player] = self.session.players
-        self.board: Board = Board()
-        self.selected: Optional[Square] = None
+        # self.winner: Optional[Player] = None
+        # self.selected: Optional[Square] = None
 
     @property
     def _current_player(self) -> Player:
@@ -210,7 +233,7 @@ class Game:
         moves = self.players[0].moves.matrix + self.players[1].moves.matrix
         return 1 - moves
 
-    def print_board(self) -> None:
+    def _print_board(self) -> None:
         """print the current board to console"""
         for l in self.current_board:
             line = ''
@@ -223,28 +246,41 @@ class Game:
         for player in self.players.values():
             player.moves.reset_moves()
 
+    @staticmethod
+    def _print_winner(player) -> None:
+        """congrats are due"""
+        print(f'Player {player + 1} Wins!!!!')
+
     def _new_winner(self) -> Player:
         """increment play score"""
         winner = self._current_player
         winner.score += 1
         player = winner.number
+        self._print_winner(player)
         self.end = True
-        print(f'Player {player + 1} Wins!!!!')
+
         return winner
+
+    def _print_keymap(self) -> None:
+        """what are the current keys"""
+        print(f'Not a valid key Player {self._current_player.number + 1} keys are:')
+        print(self._current_player.keymap)
 
     def _get_square(self, char: str) -> Optional[Square]:
         """look to see if the char is a key"""
         if char in self._current_player.keymap:
             return self._current_player.keymap[char]
         else:
-            print(f'Not a valid key Player {self._current_player.number + 1} keys are:')
-            print(self._current_player.keymap)
-            return None
+            self._print_keymap()
+
+    @staticmethod
+    def _print_square_not_free():
+        print('Square is not open')
 
     def _is_open(self, sqr: Square) -> bool:
         free = self.open_squares[sqr.y][sqr.x]
         if free == 0:
-            print('Square is not open')
+            self._print_square_not_free()
         return free
 
     def _input(self, char: str) -> bool:
@@ -275,27 +311,10 @@ class Game:
     def play(self) -> None:
         """start a play session"""
         while self.end is False:
-            self.print_board()
+            self._print_board()
             self.console_input()
             self.play_move(self.selected)
         self._end_cleanup()
-
-
-class Board:
-    """object library for drawing"""
-
-    def __init__(self) -> None:
-        self.n_by: int = 3
-
-    @property
-    def cross(self) -> str:
-        """also known as an x"""
-        return 'x'
-
-    @property
-    def nought(self) -> str:
-        """also known as an o"""
-        return 'o'
 
 
 class KeymapLib:
@@ -349,7 +368,6 @@ class Moves:
         """check if the last move was the winning move"""
         # todo return which squares contributed to the win
         # todo maybe make a win tuple?
-        # fixme column checking is not working
 
         if np.sum(self.matrix[sqr.y]) == self.n_by:
             return True
@@ -385,8 +403,8 @@ class AiPlayer(Player):
     """smart player extension"""
 
     # todo add AI class
-    def __init__(self, number, is_ai) -> None:
-        super().__init__(number, is_ai)
+    def __init__(self, number) -> None:
+        super().__init__(number)
 
 
 class CursesGame(Game):
@@ -395,7 +413,7 @@ class CursesGame(Game):
     def __init__(self, session: CursesSession) -> None:
         super().__init__(session)
         self.session = session
-        self.board: CursesBoard = CursesBoard(self.session.window)
+        self.board: BoardLib = BoardLib(self.session.window)
 
     def play(self) -> None:
         """display loop for curses"""
@@ -426,7 +444,7 @@ class CursesGame(Game):
             self._input(char)
 
 
-class CursesBoard:
+class BoardLib:
     """extended library object for curses"""
 
     def __init__(self, window: Window = None):
@@ -592,6 +610,7 @@ def main() -> None:
     """want to play a game of tic tac toe?"""
     # curses.wrapper(title_screen)
     play()
+    # CmdMode().cmdloop()
 
 
 if __name__ == "__main__":
