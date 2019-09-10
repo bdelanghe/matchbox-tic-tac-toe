@@ -16,9 +16,6 @@ Currently considering created a MENACE machine in which all learning is done fro
 from __future__ import annotations
 
 from cmd import Cmd
-# import curses
-# import math
-# import time
 from collections import namedtuple
 from typing import List, Dict, Optional
 
@@ -32,10 +29,6 @@ Square = namedtuple('Square', ['y', 'x'])
 CursesCords = namedtuple('Cords', ['y', 'x'])
 
 
-# todo make keymap namedtuple?
-
-# todo add CMD mode
-
 class CmdMode(Cmd):
     """cmd wrapper for interactions"""
     intro = f.renderText('TIC TAC TOE')
@@ -46,6 +39,21 @@ class CmdMode(Cmd):
         super().__init__()
         self.session = Session
         self.player = 0
+
+    def default(self, line):
+        """making errors more fun"""
+        print("I'm sorry I'm a bit confused. Maybe ask for 'help'?")
+
+    def preloop(self):
+        """Hook method executed once when the cmdloop() method is called."""
+        print(f.renderText('TIC TAC TOE'))
+        self.session.new_game()
+        self._print_scores()
+        self._print_board()
+
+    def postloop(self):
+        """After it's over"""
+        pass
 
     def precmd(self, line):
         """Hook method executed just before the command line is
@@ -62,13 +70,10 @@ class CmdMode(Cmd):
             self._print_board()
         return stop
 
-    def _print_scores(self) -> None:
-        """display the current player scores to console"""
-        scores = []
-        for player in self.players.values():
-            scores.append(f'Player {player.name}: {player.wins} wins')
-        scores.append(f'Ties: {self.players[0].ties}')
-        print(str.join('   |   ', scores) + '\n')
+    @staticmethod
+    def _print_bye() -> None:
+        """"print bye"""
+        print(f.renderText('thanks for playing\n'))
 
     def _print_board(self) -> None:
         """print the current board to console"""
@@ -80,183 +85,44 @@ class CmdMode(Cmd):
             print(line + '|')
         print('\n')
 
-    @staticmethod
-    def _print_bye() -> None:
-        """"print bye"""
-        print(f.renderText('thanks for playing\n'))
-
-    # noinspection PyUnusedLocal
-    def do_score(self, line):
-        """I wonder who's winning"""
-        self._print_scores()
-
-    # noinspection PyUnusedLocal
-    def do_new_game(self, line):
-        """feel like rage quitting?"""
-        self.session.new_game()
-        self._print_board()
-
-    def do_move(self, line):
-        """make a move, format must be: 'move y x''"""
-        if line == '':
-            self._do_last = True
-        elif line == 'help':
-            self._do_last = False
-            self.do_help('')
-        elif line == 'stop':
-            self._do_last = False
-        else:
-            self._do_last = True
-            try:
-                y, x = [int(s) for s in line.split()]
-                sqr = Square(y=y, x=x)
-                self.session.current_game.square_input(sqr)
-            except ValueError:
-                if self._do_last is False:
-                    print('format must be: "move y x"')
-                else:
-                    print('format must be: "y x" or type "stop"')
-
-    def do_name(self, line):
-        """give the current player a name"""
-        if line == '':
-            print('enter a name')
-            self._do_last = True
-        else:
-            self.session.current_game.current_player.name = line
-            self._do_last = False
-
-    # noinspection PyUnusedLocal
-    def do_bye(self, line):
-        """all good things come to an end"""
-        print('thanks for playing')
-        self.close()
-        return True
-
-    def close(self):
-        """all good things come to an end"""
-        if self.file:
-            self.file.close()
-            self.file = None
-
-
-
-# class Window:
-#     """Curses Window extension"""
-#
-#     # todo create a check for seeing if the window has been re-sized
-#     # todo add a func buffer for all objects that are currently displayed
-#     # todo function to re-draw all objects in buffer on re-size
-#     def __init__(self, func: object) -> None:
-#         self.stdscr: curses.initscr() = curses.wrapper(func)
-#         # self.buffer = None
-#         # self.mode = curses.def_prog_mode()
-#         # self.sub_wins = []
-#
-#     @property
-#     def size(self) -> Size:
-#         """tuple of the curses window size"""
-#         y, x = self.stdscr.getmaxyx()
-#         return Size(y=y, x=x)
-#
-#     @property
-#     def short_side(self) -> int:
-#         """find the short side of the current window"""
-#
-#         # char ratio is 2x:1y
-#         if self.size.y < self.size.x / 2:
-#             return self.size.y
-#         else:
-#             return self.size.x / 2
-#
-#     def _find_start_center(self, strings: List[str]) -> CursesCords:
-#         """the upper left corner for drawing a list of strings centered"""
-#         begin_y = int((self.size.y - len(strings)) / 2)
-#         begin_x = int((self.size.x - len(strings[0])) / 2)
-#         return CursesCords(y=begin_y, x=begin_x)
-#
-#     def draw_centered(self, strings: List[str]) -> None:
-#         """given a list of strings of equal length draw them centered"""
-#         begin_y, begin_x = self._find_start_center(strings)
-#         for i, line in enumerate(strings):
-#             self.stdscr.addstr(begin_y + i, begin_x, line)
-#         self.stdscr.refresh()
-#
-#     def clear_cords(self, cords: List[CursesCords]) -> None:
-#         """clear all characters at cords"""
-#         for cord in cords:
-#             y, x = cord
-#             self.stdscr.addch(y, x, ' ', curses.A_NORMAL)
-#
-#     def draw_select(self, cords: List[CursesCords], string: str) -> None:
-#         """draw given text blinking"""
-#         for i, cord in enumerate(cords):
-#             y, x = cord
-#             self.stdscr.addch(y, x, string[i], curses.A_BLINK)
-#
-#     def draw_commit(self, cords: List[CursesCords], string: str) -> None:
-#         """draw given text not blinking"""
-#         for i, cord in enumerate(cords):
-#             y, x = cord
-#             self.stdscr.addch(y, x, string[i], curses.A_NORMAL)
-#
-#     def get_input(self) -> str:
-#         """get input from terminal window"""
-#         try:
-#             return chr(self.stdscr.getch())
-#         except ValueError:
-#             return ''
-#
-#     @staticmethod
-#     def delay(ms: int) -> None:
-#         """delay output"""
-#         curses.delay_output(ms)
-#
-#     @staticmethod
-#     def reset() -> None:
-#         """set window back to where is started"""
-#         curses.reset_prog_mode()
-#
-#     @staticmethod
-#     def flash() -> None:
-#         """flash the terminal screen"""
-#         curses.flash()
+    def _print_scores(self) -> None:
+        """display the current player scores to console"""
+        scores = []
+        for player in self.players.values():
+            scores.append(f'Player {player.name}: {player.wins} wins')
+        scores.append(f'Ties: {self.players[0].ties}')
+        print(str.join('   |   ', scores) + '\n')
 
 
 class Player:
     """player object to hold moves and score"""
 
+    def move(self, sqr: Square) -> bool:
+        """add move to player moves"""
+        return self.moves.move(sqr)
+
     def __init__(self, number: int) -> None:
         self.moves: Moves = Moves()
         self.number = number
         self.name = f'Player {self.number + 1}'
-        # self.keymap: Dict[str, Square] = KeymapLib.from_player(self).keys
         self.wins = 0
         self.ties = 0
-
-    # def get_square(self, char: str) -> Square:
-    #     """given player input look for corresponding square"""
-    #     if char in self.keymap:
-    #         return self.keymap[char]
-
-    def move(self, sqr: Square) -> bool:
-        """add move to player moves"""
-        return self.moves.move(sqr)
 
 
 class Session:
     """sessions help keep track score"""
 
+    def new_game(self) -> None:
+        """create a new game"""
+        if self.current_game is not None:
+            self.play_count += 1
+            del self.current_game
+        self.current_game = Game(self)
+
     def __init__(self) -> None:
         self.players: Dict[int, Player] = {0: Player(0), 1: Player(1)}
         self.current_game: Optional[Game] = None
         self.play_count: int = 0
-        # self.quit: bool = False
-
-    @property
-    def first_move(self) -> int:
-        """which player gets to go first"""
-        return self.play_count % 2
 
     def _new_game(self) -> None:
         """create a new game"""
@@ -288,30 +154,24 @@ class Session:
 
 class Game:
     """simple class for playing in cmd"""
-    # todo add draw win
+
     n_by = 3
     marks = {0: 'x', 1: 'o'}
+
+    def square_input(self, sqr: Square) -> Optional[bool]:
+        """input from square object"""
+        if self._is_open(sqr):
+            return self._play_move(sqr)
 
     def __init__(self, session) -> None:
         self.session: Optional[Session] = session
         self.players: Dict[int, Player] = self.session.players
         self.turns: int = 0
-        # self.end: bool = False
-        # self.previous_move: Optional[Square] = None
-        # self.winner: Optional[Player] = None
-        # self.selected: Optional[Square] = None
 
-    @property
-    def current_player(self) -> Player:
-        """the player who's turn it is"""
-        start = self.session.first_move
-        return self.session.players[(start + self.turns) % 2]
-
-    @property
-    def _waiting_player(self) -> Player:
-        """the player who's turn it is"""
-        start = self.session.first_move
-        return self.session.players[(start + self.turns - 1) % 2]
+    def __del__(self) -> None:
+        """clean house on game end"""
+        for player in self.players.values():
+            player.moves.reset_moves()
 
     @property
     def current_board(self) -> List[List[str]]:
@@ -322,7 +182,13 @@ class Game:
                 for x, e in enumerate(row):
                     if e == 1:
                         board[y][x] = self.marks[player.number != self.session.first_move]
-        return board
+            return board
+
+    @property
+    def current_player(self) -> Player:
+        """the player who's turn it is"""
+        start = self.session.first_move
+        return self.session.players[(start + self.turns) % 2]
 
     @property
     def open_squares(self) -> np.matrix:
@@ -330,34 +196,11 @@ class Game:
         moves = self.players[0].moves.matrix + self.players[1].moves.matrix
         return 1 - moves
 
-    # def _print_board(self) -> None:
-    #     """print the current board to console"""
-    #     for l in self.current_board:
-    #         line = ''
-    #         for e in l:
-    #             line += '|' + e
-    #         print(line + '|')
-
-    def __del__(self) -> None:
-        """clean house on game end"""
-        for player in self.players.values():
-            player.moves.reset_moves()
-
-    @staticmethod
-    def _print_winner(player: Player) -> None:
-        """congrats are due"""
-        print(f.renderText(f'{player.name} Wins!!!!'))
-
-    def _new_winner(self) -> None:
-        """increment play score"""
-        self.current_player.wins += 1
-        self._print_winner(self.current_player)
-        self._end()
-
-    @staticmethod
-    def _print_cats() -> None:
-        """let players know the cat always wins"""
-        print(f.renderText("Cat's Game"))
+    @property
+    def _waiting_player(self) -> Player:
+        """the player who's turn it is"""
+        start = self.session.first_move
+        return self.session.players[(start + self.turns - 1) % 2]
 
     def _cats(self) -> None:
         """better luck next time"""
@@ -366,22 +209,9 @@ class Game:
         self._print_cats()
         self._end()
 
-    # def _print_keymap(self) -> None:
-    #     """what are the current keys"""
-    #     print(f'Not a valid key Player {self._current_player.number + 1} keys are:')
-    #     print(self._current_player.keymap)
-
-    # def _get_square(self, char: str) -> Optional[Square]:
-    #     """look to see if the char is a key"""
-    #     if char in self._current_player.keymap:
-    #         return self._current_player.keymap[char]
-    #     else:
-    #         self._print_keymap()
-
-    @staticmethod
-    def _print_square_not_free():
-        """Can't sit here"""
-        print('Square is not open')
+    def _end(self) -> None:
+        self.session.new_game()
+        """called if winner or tie"""
 
     def _is_open(self, sqr: Square) -> bool:
         """this is not the square you are looking for"""
@@ -390,19 +220,7 @@ class Game:
             self._print_square_not_free()
         return free
 
-    # def char_input(self, char: str) -> Optional[bool]:
-    #     """look up square if in player keymap"""
-    #     sqr = self._get_square(char)
-    #     if sqr is not None:
-    #         return self.square_input(sqr)
-
-    # def tuple_input(self, tup: tuple) -> Optional[bool]:
-    #     """input from tuple"""
-    #     y, x = tup
-    #     sqr = Square(y=y, x=x)
-    #     return self.square_input(sqr)
-
-    def is_last(self) -> bool:
+    def _is_last(self) -> bool:
         """are there any spots left to play"""
         for line in self.open_squares:
             for e in line:
@@ -410,69 +228,50 @@ class Game:
                     return False
         return True
 
-    def square_input(self, sqr: Square) -> Optional[bool]:
-        """input from square object"""
-        if self._is_open(sqr):
-            return self.play_move(sqr)
+    def _new_winner(self) -> None:
+        """increment play score"""
+        self.current_player.wins += 1
+        self._print_winner(self.current_player)
+        self._end()
 
-    def console_input(self) -> None:
-        """keep asking for input"""
-        move = False
-        while move is False:
-            move = self._input(input())
-
-    def play_move(self, sqr: Square) -> None:
+    def _play_move(self, sqr: Square) -> None:
         """commit a move and return if winner"""
         win = self.current_player.move(sqr)
         if win is True:
             self._new_winner()
-        if self.is_last() is True:
+        if self._is_last() is True:
             self._cats()
         self.turns += 1
 
-    def _end(self) -> None:
-        """called if winner or tie"""
-        self.session.new_game()
+    # todo remove printing from class
+    @staticmethod
+    def _print_cats() -> None:
+        """let players know the cat always wins"""
+        print(f.renderText("Cat's Game"))
 
-    # def play(self) -> None:
-    #     """start a play session"""
-    #     while self.end is False:
-    #         self._print_board()
-    #         self.console_input()
-    #         self.play_move(self.selected)
+    @staticmethod
+    def _print_square_not_free():
+        """Can't sit here"""
+        print('Square is not open')
 
-
-# class KeymapLib:
-#     """mapping characters to squares"""
-#
-#     def __init__(self, keys=None) -> None:
-#         self.keys = keys
-#
-#     @classmethod
-#     def from_player(cls, player: Player):
-#         """each player has their own keys"""
-#         keys_dict = {}
-#         chars = None
-#         if player.number == 0:
-#             chars = ['q', 'w', 'e', 'a', 's', 'd', 'z', 'x', 'c']
-#         if player.number == 1:
-#             chars = ['u', 'i', 'o', 'j', 'k', 'l', 'm', ',', '.']
-#         for i, c in enumerate(chars):
-#             y = int(i / 3)
-#             x = i % 3
-#             keys_dict[c] = Square(y=y, x=x)
-#         return cls(keys_dict)
-#
-#     # @property
-#     # def arrow_keys(self) -> Dict[str, tuple]:
-#     #     """movement with arrows"""
-#     #     # todo add an input method so a player can move with keys
-#     #     return {curses.KEY_UP: (-1, 0), curses.KEY_DOWN: (1, 0), curses.KEY_LEFT: (0, -1), curses.KEY_RIGHT: (0, 1)}
+    @staticmethod
+    def _print_winner(player: Player) -> None:
+        """congrats are due"""
+        print(f.renderText(f'{player.name} Wins!!!!'))
 
 
 class Moves:
     """store all the moves a player has made"""
     n_by = 3
+
+    def move(self, sqr: Square) -> bool:
+        """add a move to np matrix return win"""
+        self.matrix[sqr.y][sqr.x] = 1
+        return self._is_win_move(sqr)
+
+    def reset_moves(self):
+        """reset after end of game"""
+        self.matrix: np.ndarray = np.zeros((self.n_by, self.n_by), dtype=int)
 
     def __init__(self):
         self.matrix: np.ndarray = np.zeros((self.n_by, self.n_by), dtype=int)
@@ -480,19 +279,10 @@ class Moves:
     def __repr__(self) -> str:
         return str(self.matrix)
 
-    def reset_moves(self):
-        """reset after end of game"""
-        self.matrix: np.ndarray = np.zeros((self.n_by, self.n_by), dtype=int)
-
-    def move(self, sqr: Square) -> bool:
-        """add a move to np matrix return win"""
-        self.matrix[sqr.y][sqr.x] = 1
-        return self._is_win_move(sqr)
-
     def _is_win_move(self, sqr: Square) -> bool:
         """check if the last move was the winning move"""
-        # todo return which squares contributed to the win
-        # todo maybe make a win tuple?
+        # todo return which line contributed to the win
+        #  maybe make a win tuple?
 
         if np.sum(self.matrix[sqr.y]) == self.n_by:
             return True
