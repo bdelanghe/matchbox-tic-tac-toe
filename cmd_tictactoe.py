@@ -2,13 +2,13 @@
 TIC TAC TOE GAME
 
 Play a simple game inside python's cmd module. The board is drawn to match the curses module layout:
-
+```
   0 1 2 x
 0| | | |
 1| | | |
 2| | | |
 y
-
+```
 Play multiple session and keep track of score. Future versions will have curses graphics and an AI.
 Currently considering created a MENACE machine in which all learning is done from beads inside matchboxes.
 """
@@ -17,16 +17,13 @@ from __future__ import annotations
 
 from cmd import Cmd
 from collections import namedtuple
-from typing import List, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from pyfiglet import Figlet
 
-f: Figlet = Figlet(font='slant')
-
-Size = namedtuple('Size', ['y', 'x'])
+fig = Figlet(font='slant')
 Square = namedtuple('Square', ['y', 'x'])
-CursesCords = namedtuple('Cords', ['y', 'x'])
 
 
 class CmdMode(Cmd):
@@ -54,8 +51,16 @@ Play a simple game inside python's cmd module. The board coordinates are:
 
     # noinspection PyUnusedLocal
     def do_new_game(self, line):
-        """feel like rage quitting?"""
-        self.session.new_game()
+        """feel like rage quitting? or try 'new_game 10'"""
+        n_by = 3
+        if line is not None:
+            try:
+                number = int(line)
+                if 0 < number < 101:
+                    n_by = number
+            except ValueError:
+                pass
+        self.session.new_game(n_by)
         self._print_board()
 
     def do_name(self, line):
@@ -69,6 +74,7 @@ Play a simple game inside python's cmd module. The board coordinates are:
 
     def do_move(self, line):
         """make a move, format must be: 'move y x''"""
+        line = line
         if line == '':
             self._do_last = True
         elif line == 'help':
@@ -76,17 +82,20 @@ Play a simple game inside python's cmd module. The board coordinates are:
             self.do_help('')
         elif line == 'stop':
             self._do_last = False
+            # nonlocal li
         else:
+            if 'move ' in line:
+                line = line.replace('move ', '')
             self._do_last = True
             try:
                 y, x = [int(s) for s in line.split()]
                 sqr = Square(y=y, x=x)
-                self.session.current_game.square_input(sqr)
+                self.message_handler(self.session.current_game.square_input(sqr))
             except ValueError:
                 if self._do_last is False:
-                    print('format must be: "move y x"')
+                    print('\nAlert: Format must be: "move y x"')
                 else:
-                    print('format must be: "y x" or type "stop"')
+                    print('\nAlert: Format must be: "y x" or type "stop"')
 
     # noinspection PyUnusedLocal
     def do_score(self, line):
@@ -129,7 +138,7 @@ Play a simple game inside python's cmd module. The board coordinates are:
 
     def preloop(self):
         """Hook method executed once when the cmdloop() method is called."""
-        print(f.renderText('TIC TAC TOE'))
+        print(fig.renderText('TIC TAC TOE'))
         self.session.new_game()
         self._print_scores()
         self._print_board()
@@ -156,12 +165,12 @@ Play a simple game inside python's cmd module. The board coordinates are:
     @staticmethod
     def _print_bye() -> None:
         """"print bye"""
-        print(f.renderText('thanks for playing\n'))
+        print(fig.renderText('thanks for playing\n'))
 
     def _print_board(self) -> None:
         """print the current board to console"""
         print()
-        for l in self.session.current_game.current_board:
+        for l in self.session.current_game.board:
             line = ''
             for e in l:
                 line += '|' + e
@@ -172,20 +181,49 @@ Play a simple game inside python's cmd module. The board coordinates are:
         """display the current player scores to console"""
         scores = []
         for player in self.players.values():
-            scores.append(f'Player {player.name}: {player.wins} wins')
+            scores.append(f'{player.name}: {player.wins} wins')
         scores.append(f'Ties: {self.players[0].ties}')
         print(str.join('   |   ', scores) + '\n')
+
+    @staticmethod
+    def _print_cats() -> None:
+        """let players know the cat always wins"""
+        print(fig.renderText("Cat's Game"))
+
+    @staticmethod
+    def _print_square_not_free():
+        """Can't sit here"""
+        print('\nAlert: Square is not open')
+
+    @staticmethod
+    def _print_winner(name: str) -> None:
+        """congrats are due"""
+        print(fig.renderText(f'{name} Wins!!!!'))
+
+    def message_handler(self, message: tuple):
+        """unpack messages from game"""
+        if message is not None:
+            if message[0] == 'Not Open':
+                self._print_square_not_free()
+            elif message[0] == 'Winner':
+                self._print_board()
+                self._print_winner(message[1])
+                self._print_scores()
+                self.session.new_game()
+            elif message[0] == 'Cats':
+                self._print_board()
+                self._print_cats()
+                self._print_scores()
+                self.session.new_game()
+            elif message[0] == 'Out of range':
+                print(f'\nAlert: Range is 0 => {message[1]}')
 
 
 class Player:
     """player object to hold moves and score"""
 
-    def move(self, sqr: Square) -> bool:
-        """add move to player moves"""
-        return self.moves.move(sqr)
-
     def __init__(self, number: int) -> None:
-        self.moves: Moves = Moves()
+        # self.moves: Moves = Moves()
         self.number = number
         self.name = f'Player {self.number + 1}'
         self.wins = 0
@@ -195,12 +233,12 @@ class Player:
 class Session:
     """sessions help keep track score"""
 
-    def new_game(self) -> None:
+    def new_game(self, n_by: int = 3) -> None:
         """create a new game"""
         if self.current_game is not None:
             self.play_count += 1
             del self.current_game
-        self.current_game = Game(self)
+        self.current_game = Game(self, n_by)
 
     def __init__(self) -> None:
         self.players: Dict[int, Player] = {0: Player(0), 1: Player(1)}
@@ -216,34 +254,22 @@ class Session:
 class Game:
     """simple class for playing in cmd"""
 
-    n_by = 3
     marks = {0: 'x', 1: 'o'}
 
-    def square_input(self, sqr: Square) -> Optional[bool]:
+    def square_input(self, sqr: Square) -> Optional[Tuple]:
         """input from square object"""
-        if self._is_open(sqr):
+        message = self._is_open(sqr)
+        if message[0] == "Open":
             return self._play_move(sqr)
+        return message
 
-    def __init__(self, session) -> None:
+    def __init__(self, session, n_by=3) -> None:
+        self.n_by: int = n_by
         self.session: Optional[Session] = session
         self.players: Dict[int, Player] = self.session.players
+        self.board: List[List[str]] = [[' ' for _ in range(self.n_by)] for _ in range(self.n_by)]
+        self.moves: Dict[int, Moves] = {0: Moves(self.n_by), 1: Moves(self.n_by)}
         self.turns: int = 0
-
-    def __del__(self) -> None:
-        """clean house on game end"""
-        for player in self.players.values():
-            player.moves.reset_moves()
-
-    @property
-    def current_board(self) -> List[List[str]]:
-        """add the view of both players"""
-        board = [[' ', ' ', ' '], [' ', ' ', ' '], [' ', ' ', ' ']]
-        for _, player in self.players.items():
-            for y, row in enumerate(player.moves.matrix):
-                for x, e in enumerate(row):
-                    if e == 1:
-                        board[y][x] = self.marks[player.number != self.session.first_move]
-            return board
 
     @property
     def current_player(self) -> Player:
@@ -254,7 +280,7 @@ class Game:
     @property
     def open_squares(self) -> np.matrix:
         """the inverse of all squares played"""
-        moves = self.players[0].moves.matrix + self.players[1].moves.matrix
+        moves = self.moves[0].matrix + self.moves[1].matrix
         return 1 - moves
 
     @property
@@ -263,23 +289,32 @@ class Game:
         start = self.session.first_move
         return self.session.players[(start + self.turns - 1) % 2]
 
-    def _cats(self) -> None:
+    def _add_to_board(self, sqr: Square) -> None:
+        """keeping track of moves"""
+        if self.current_player.number == self.session.first_move:
+            mark = self.marks[0]
+        else:
+            mark = self.marks[1]
+        self.board[sqr.y][sqr.x] = mark
+
+    def _cats(self) -> Tuple[str, list]:
         """better luck next time"""
         for player in self.players.values():
             player.ties += 1
-        self._print_cats()
-        self._end()
+        return 'Cats', self.board
 
     def _end(self) -> None:
         self.session.new_game()
         """called if winner or tie"""
 
-    def _is_open(self, sqr: Square) -> bool:
+    def _is_open(self, sqr: Square) -> Tuple[str, Any]:
         """this is not the square you are looking for"""
-        free = self.open_squares[sqr.y][sqr.x]
-        if free == 0:
-            self._print_square_not_free()
-        return free
+        last_index = len(self.open_squares) - 1
+        if sqr.y > last_index or sqr.x > last_index or sqr.y < 0 or sqr.x < 0:
+            return 'Out of range', last_index
+        elif self.open_squares[sqr.y][sqr.x] == 0:
+            return 'Not Open', sqr
+        return 'Open', sqr
 
     def _is_last(self) -> bool:
         """are there any spots left to play"""
@@ -289,52 +324,39 @@ class Game:
                     return False
         return True
 
-    def _new_winner(self) -> None:
+    def _new_winner(self) -> Tuple[str, str]:
         """increment play score"""
         self.current_player.wins += 1
-        self._print_winner(self.current_player)
-        self._end()
+        return 'Winner', self.current_player.name
 
     def _play_move(self, sqr: Square) -> None:
         """commit a move and return if winner"""
-        win = self.current_player.move(sqr)
-        if win is True:
-            self._new_winner()
-        if self._is_last() is True:
-            self._cats()
+        self._add_to_board(sqr)
+        message = self.moves[self.current_player.number].move(sqr)
+        if message is not None and message[0] == "Winner":
+            message = self._new_winner()
+        elif self._is_last() is True:
+            message = self._cats()
         self.turns += 1
-
-    # todo remove printing from class
-    @staticmethod
-    def _print_cats() -> None:
-        """let players know the cat always wins"""
-        print(f.renderText("Cat's Game"))
-
-    @staticmethod
-    def _print_square_not_free():
-        """Can't sit here"""
-        print('Square is not open')
-
-    @staticmethod
-    def _print_winner(player: Player) -> None:
-        """congrats are due"""
-        print(f.renderText(f'{player.name} Wins!!!!'))
+        return message
 
 
 class Moves:
     """store all the moves a player has made"""
-    n_by = 3
 
-    def move(self, sqr: Square) -> bool:
+    def move(self, sqr: Square) -> Optional[Tuple[str, Square]]:
         """add a move to np matrix return win"""
         self.matrix[sqr.y][sqr.x] = 1
-        return self._is_win_move(sqr)
+        win = self._is_win_move(sqr)
+        if win is True:
+            return 'Winner', sqr
 
     def reset_moves(self):
         """reset after end of game"""
         self.matrix: np.ndarray = np.zeros((self.n_by, self.n_by), dtype=int)
 
-    def __init__(self):
+    def __init__(self, n_by):
+        self.n_by: int = n_by
         self.matrix: np.ndarray = np.zeros((self.n_by, self.n_by), dtype=int)
 
     def __repr__(self) -> str:
@@ -347,14 +369,12 @@ class Moves:
 
         if np.sum(self.matrix[sqr.y]) == self.n_by:
             return True
-        elif sum([l[sqr.x] for l in self.matrix]) == self.n_by:
+        if sum([l[sqr.x] for l in self.matrix]) == self.n_by:
             return True
-        elif sqr.x == sqr.y:
-            if sum(np.diagonal(self.matrix)) == self.n_by:
-                return True
-        else:
-            if sum(np.diag(np.fliplr(self.matrix))) == self.n_by:
-                return True
+        if sqr.x == sqr.y and sum(np.diagonal(self.matrix)) == self.n_by:
+            return True
+        if sqr.x == (self.n_by - 1) - sqr.y and sum(np.diag(np.fliplr(self.matrix))) == self.n_by:
+            return True
         return False
 
 
