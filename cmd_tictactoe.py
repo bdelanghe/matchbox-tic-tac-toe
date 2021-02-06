@@ -223,7 +223,6 @@ class Player:
     """player object to hold moves and score"""
 
     def __init__(self, number: int) -> None:
-        # self.moves: Moves = Moves()
         self.number = number
         self.name = f'Player {self.number + 1}'
         self.wins = 0
