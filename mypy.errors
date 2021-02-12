@@ -1,0 +1,17 @@
+cmd_only/cmd_tictactoe.py:238: error: Cannot determine type of 'current_game'
+cmd_only/cmd_tictactoe.py:240: error: Cannot determine type of 'current_game'
+cmd_only/cmd_tictactoe.py:245: error: Attribute 'current_game' already defined on line 241
+cmd_only/cmd_tictactoe.py:245: error: Incompatible types in assignment (expression has type "None", variable has type "Game")
+cmd_only/cmd_tictactoe.py:263: error: "_play_move" of "Game" does not return a value
+cmd_only/cmd_tictactoe.py:269: error: Item "None" of "Optional[Session]" has no attribute "players"
+cmd_only/cmd_tictactoe.py:279: error: Item "None" of "Optional[Session]" has no attribute "first_move"
+cmd_only/cmd_tictactoe.py:280: error: Item "None" of "Optional[Session]" has no attribute "players"
+cmd_only/cmd_tictactoe.py:291: error: Item "None" of "Optional[Session]" has no attribute "first_move"
+cmd_only/cmd_tictactoe.py:292: error: Item "None" of "Optional[Session]" has no attribute "players"
+cmd_only/cmd_tictactoe.py:296: error: Item "None" of "Optional[Session]" has no attribute "first_move"
+cmd_only/cmd_tictactoe.py:309: error: Item "None" of "Optional[Session]" has no attribute "new_game"
+cmd_only/cmd_tictactoe.py:339: error: Incompatible types in assignment (expression has type "Tuple[str, str]", variable has type "Optional[Tuple[str, Square]]")
+cmd_only/cmd_tictactoe.py:341: error: Incompatible types in assignment (expression has type "Tuple[str, List[Any]]", variable has type "Optional[Tuple[str, Square]]")
+cmd_only/cmd_tictactoe.py:343: error: No return value expected
+cmd_only/cmd_tictactoe.py:349: error: Missing return statement
+Found 16 errors in 1 file (checked 1 source file)

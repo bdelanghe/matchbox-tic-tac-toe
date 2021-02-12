@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+attrs = "==20.3.0"
+jsonschema = "==3.2.0"
+jupyter-core = "==4.7.1"
+nbformat = "==5.1.2"
+protobuf = "==3.14.0"
+pyrsistent = "==0.17.3"
+six = "==1.15.0"
+traitlets = "==5.0.5"
+ipython_genutils = "==0.2.0"
+numpy = "*"
+monkeytype = "*"
+pyfiglet = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.9"
