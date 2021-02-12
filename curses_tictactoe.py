@@ -1,22 +1,18 @@
 import curses
 import time
 import math
+
 # import numpy as np
 from pyfiglet import Figlet
 from collections import namedtuple
 from typing import NamedTuple
 
-f = Figlet(font='slant')
-Square = namedtuple('Square', ['y', 'x'])
+f = Figlet(font="slant")
+Square = namedtuple("Square", ["y", "x"])
 
-settings = {
-    'board_lines': u'\u2588'
-}
+settings = {"board_lines": u"\u2588"}
 
-player_scores = {
-    1: 0,
-    2: 0
-}
+player_scores = {1: 0, 2: 0}
 # class Player:
 #     pass
 #
@@ -73,14 +69,14 @@ def title_screen(stdscr: curses.initscr) -> None:
                 stdscr.addstr(y, x, line[i])
                 y += 1
             stdscr.refresh()
-            time.sleep(.05)
+            time.sleep(0.05)
             x += 1
         return y
 
     def load_title() -> None:
-        title = f.renderText('TIC TAC TOE')
-        sub_title = 'produced by: robert delanghe studio'
-        any_key = 'press any key to continue'
+        title = f.renderText("TIC TAC TOE")
+        sub_title = "produced by: robert delanghe studio"
+        any_key = "press any key to continue"
 
         y = wipe_text(title)
 
@@ -89,7 +85,9 @@ def title_screen(stdscr: curses.initscr) -> None:
 
         time.sleep(1)
 
-        stdscr.addstr(win_h - 1, win_w - len(any_key) - 2, any_key, curses.A_BLINK + curses.A_DIM)
+        stdscr.addstr(
+            win_h - 1, win_w - len(any_key) - 2, any_key, curses.A_BLINK + curses.A_DIM
+        )
 
         stdscr.refresh()
 
@@ -130,10 +128,10 @@ def game(stdscr: curses.initscr) -> None:
     def make_board(sqr: Square) -> str:
         fill = u"\u2588"
         # fill = '#'
-        output = ''
+        output = ""
 
         for row in range(1, (sqr.y * n_by) + n_by):
-            line = ''
+            line = ""
             for col in range(1, (sqr.y * n_by) + n_by):
                 y_pos = int(row / (sqr.y + 1))
                 x_pos = int(col / (sqr.y + 1))
@@ -144,47 +142,49 @@ def game(stdscr: curses.initscr) -> None:
                     line += fill * 2
                 else:
                     line += grid_pos * 2
-            output += line + '\n'
+            output += line + "\n"
 
         return output
 
     def get_cross(sqr: Square, invert=False):
-        cross = ''
-        fill = '?'
+        cross = ""
+        fill = "?"
         for row in range(sqr.y):
             for col in range(sqr.x):
                 if col == row * 2 or col == (sqr.x - 1) - (row * 2):
                     if invert:
-                        cross += ' '
+                        cross += " "
                     else:
                         cross += fill
                 else:
                     if invert:
                         cross += fill
                     else:
-                        cross += ' '
+                        cross += " "
         return cross
 
     # function to create a circle
     # Thanks to Anant Agarwal
     def get_circle(sqr: Square, invert=False):
-        circle = ''
-        fill = '@'
-        radius = sqr.y / 2 - .5
+        circle = ""
+        fill = "@"
+        radius = sqr.y / 2 - 0.5
         for c in range(sqr.y):
             for j in range(sqr.y):
-                dist = math.sqrt((c - radius) * (c - radius) +
-                                 (j - radius) * (j - radius)) + 1
+                dist = (
+                    math.sqrt((c - radius) * (c - radius) + (j - radius) * (j - radius))
+                    + 1
+                )
                 if radius - 0.5 < dist < radius + 0.5:
                     if invert:
-                        circle += ' ' * 2
+                        circle += " " * 2
                     else:
                         circle += fill * 2
                 else:
                     if invert:
                         circle += fill * 2
                     else:
-                        circle += ' ' * 2
+                        circle += " " * 2
         return circle
 
     def draw_board():
@@ -199,7 +199,7 @@ def game(stdscr: curses.initscr) -> None:
                     square_dict[col] = []
                 if col.isdigit():
                     square_dict[col].append((board_y, board_x))
-                    stdscr.addstr(board_y, board_x, ' ')
+                    stdscr.addstr(board_y, board_x, " ")
                 else:
                     stdscr.addstr(board_y, board_x, col, curses.A_DIM)
                 board_x += 1
@@ -210,29 +210,23 @@ def game(stdscr: curses.initscr) -> None:
 
     square = get_square_size()
     squares = draw_board()
-    last = ''
+    last = ""
     turn = 0
-    players = ['x', 'o']
+    players = ["x", "o"]
     player_squares = {
-        'x': {
-            'blink': get_cross(square, True),
-            'select': get_cross(square)
-        },
-        'o': {
-            'blink': get_circle(square, True),
-            'select': get_circle(square)
-        }
+        "x": {"blink": get_cross(square, True), "select": get_cross(square)},
+        "o": {"blink": get_circle(square, True), "select": get_circle(square)},
     }
     keymap = {
-        'q': '0',
-        'w': '1',
-        'e': '2',
-        'a': '3',
-        's': '4',
-        'd': '5',
-        'z': '6',
-        'x': '7',
-        'c': '8'
+        "q": "0",
+        "w": "1",
+        "e": "2",
+        "a": "3",
+        "s": "4",
+        "d": "5",
+        "z": "6",
+        "x": "7",
+        "c": "8",
     }
     endgame = False
     while True and len(keymap) > 0:
@@ -253,23 +247,23 @@ def game(stdscr: curses.initscr) -> None:
         play_square = player_squares[players[turn % 2]]
         if char in keymap:
             sq = keymap[char]
-            if last != '':
+            if last != "":
                 for y, x in squares[keymap[last]]:
-                    stdscr.addch(y, x, ' ', curses.A_NORMAL)
+                    stdscr.addch(y, x, " ", curses.A_NORMAL)
             for i, cord in enumerate(squares[sq]):
                 y, x = cord
-                stdscr.addch(y, x, play_square['blink'][i], curses.A_BLINK)
+                stdscr.addch(y, x, play_square["blink"][i], curses.A_BLINK)
                 last = char
-        if event == ord(' ') and last != '':
+        if event == ord(" ") and last != "":
             for i, cord in enumerate(squares[keymap[last]]):
                 y, x = cord
-                stdscr.addch(y, x, play_square['select'][i], curses.A_NORMAL)
+                stdscr.addch(y, x, play_square["select"][i], curses.A_NORMAL)
             keymap.pop(last, None)
-            last = ''
+            last = ""
             turn += 1
 
         stdscr.refresh()
-        if event == ord('`'):
+        if event == ord("`"):
             endgame = True
             break
 

@@ -21,37 +21,37 @@
 
 import curses
 
+
 def main(window):
-    def make_window(y,x):
-        win1_start_row = y  - 4
-        win1 = stdscr.subwin(win1_start_row,0,0,0)
+    def make_window(y, x):
+        win1_start_row = y - 4
+        win1 = stdscr.subwin(win1_start_row, 0, 0, 0)
         win1.box()
-        win1.addstr(1,1,"Press q to quit, use arrow keys!")
-        win1.bkgd(' ', curses.color_pair(1))
+        win1.addstr(1, 1, "Press q to quit, use arrow keys!")
+        win1.bkgd(" ", curses.color_pair(1))
         win1.refresh()
 
-    def win2(y,x):
-        half_cols = int(x/2)
+    def win2(y, x):
+        half_cols = int(x / 2)
         rows_size = 5
         x_start_row = y - 5
         y_start_col = 0
 
         win2 = stdscr.subwin(rows_size, half_cols, x_start_row, y_start_col)
         win2.box()
-        win2.addstr(1,1,"Right data.", curses.color_pair(1))
-        win2.bkgd(' ', curses.color_pair(2))
+        win2.addstr(1, 1, "Right data.", curses.color_pair(1))
+        win2.bkgd(" ", curses.color_pair(2))
         win2.refresh()
 
-
-    def win3(y,x):
-        half_cols = int(x/2)
+    def win3(y, x):
+        half_cols = int(x / 2)
         rows_size = 5
         x_start_row = y - 5
         y_start_col = 0
-        win3 = stdscr.subwin(rows_size, half_cols, x_start_row, int(x/2))
+        win3 = stdscr.subwin(rows_size, half_cols, x_start_row, int(x / 2))
         win3.box()
-        win3.addstr(1,1,"Left data.", curses.color_pair(1))
-        win3.bkgd(' ', curses.color_pair(3))
+        win3.addstr(1, 1, "Left data.", curses.color_pair(1))
+        win3.bkgd(" ", curses.color_pair(3))
         win3.refresh()
 
     NO_KEY_PRESSED = -1
@@ -85,20 +85,20 @@ def main(window):
     win3(y, x)
 
     key_pressed = NO_KEY_PRESSED
-    while key_pressed != ord('q'):
+    while key_pressed != ord("q"):
         key_pressed = stdscr.getch()
 
         if key_pressed == curses.KEY_UP:
-            win1.addstr(2,1,"going up...", curses.color_pair(4))
+            win1.addstr(2, 1, "going up...", curses.color_pair(4))
 
         if key_pressed == curses.KEY_DOWN:
-            win1.addstr(2,1,"going down...", curses.color_pair(4))
+            win1.addstr(2, 1, "going down...", curses.color_pair(4))
 
         if key_pressed == curses.KEY_RIGHT:
-            win1.addstr(2,1,"going right...", curses.color_pair(4))
+            win1.addstr(2, 1, "going right...", curses.color_pair(4))
 
         if key_pressed == curses.KEY_LEFT:
-            make_window.addstr(2,1,"going left...", curses.color_pair(4))
+            make_window.addstr(2, 1, "going left...", curses.color_pair(4))
 
         if key_pressed == curses.KEY_RESIZE:
             win1.erase()
@@ -110,5 +110,5 @@ def main(window):
         win1.refresh()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     curses.wrapper(main)
