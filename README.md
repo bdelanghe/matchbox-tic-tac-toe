@@ -1,13 +1,5 @@
 # 🎲 Matchbox TicTacToe 🎲
 
-## 📖 Table of Contents
-- [About](#about)
-- [Key Features](#key-features)
-- [Installation](#installation)
-- [How to Play](#how-to-play)
-- [Code Structure](#code-structure)
-- [Contributing](#contributing)
-
 ## 🧐 About
 
 Welcome to Matchbox TicTacToe, a command-line interface (CLI) based game that adds a smart twist to the classic TicTacToe! The AI opponent in this game is trained using the MENACE (Matchbox Educable Naughts and Crosses Engine) algorithm, a pioneering machine learning algorithm invented by Donald Michie in the 1960s. Learn more about MENACE [here](https://en.wikipedia.org/wiki/Matchbox_Educable_Noughts_and_Crosses_Engine).
